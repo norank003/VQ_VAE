@@ -3,6 +3,9 @@ import torch.nn.functional as F
 import torch
 
 
+
+
+
 class Residual_Block(nn.Module):  # RELU 3X3CONV RELU 1x1Conv
   def __init__(self,dim):
     super().__init__()
@@ -25,10 +28,10 @@ class Encoder_Block(nn.Module):
         nn.Conv2d(in_channels=input_shape,out_channels=hidden_dims//2,kernel_size=4,stride=2,padding=1), #(1,28,28)
         nn.ReLU(inplace=True),
         nn.Conv2d(in_channels=hidden_dims//2  ,  out_channels=hidden_dims,  kernel_size=4  ,  stride=2  ,  padding=1), #(256,14,14)
-  
+
         Residual_Block(hidden_dims),
         Residual_Block(hidden_dims),
-        
+
         nn.Conv2d(hidden_dims, hidden_dims, kernel_size=3, padding=1)
 
 
@@ -128,6 +131,6 @@ class VQ_VAE_Model(nn.Module):
     z=self.encoder(x)
     z,dictionary_loss,commitment_loss,encoding_indices=self.vq_layer(z)
     x_hat=self.decoder(z)
-
     return (x_hat,dictionary_loss,commitment_loss,encoding_indices)
+
 
