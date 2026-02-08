@@ -1,5 +1,5 @@
-from vqvae.data_setup import DataSetup
-from vqvae.models.vq_vae import VQ_VAE_Model
+from data_setup import DataSetup
+from models.vq_vae import VQ_VAE_Model
 import torch
 import torch.nn as nn
 from PIL import Image
