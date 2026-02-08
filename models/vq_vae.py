@@ -12,6 +12,7 @@ class Residual_Block(nn.Module):  # RELU 3X3CONV RELU 1x1Conv
         nn.ReLU(inplace=True),
         nn.Conv2d(in_channels=dim,out_channels=dim,kernel_size=1,stride=1),
 
+
     )
   def forward(self,x):
     return x+self.block(x)
@@ -24,6 +25,11 @@ class Encoder_Block(nn.Module):
         nn.Conv2d(in_channels=input_shape,out_channels=hidden_dims//2,kernel_size=4,stride=2,padding=1), #(1,28,28)
         nn.ReLU(inplace=True),
         nn.Conv2d(in_channels=hidden_dims//2  ,  out_channels=hidden_dims,  kernel_size=4  ,  stride=2  ,  padding=1), #(256,14,14)
+  
+        Residual_Block(hidden_dims),
+        Residual_Block(hidden_dims),
+        
+        nn.Conv2d(hidden_dims, hidden_dims, kernel_size=3, padding=1)
 
 
     )
@@ -41,7 +47,7 @@ class Vector_Quantizer_Block (nn.Module):
 
     self.emmbedings=num_embeddings  # k
     self.embedding_dim=embedding_dim  #d in paper
-    self.commitment_cost=commitment_cost 
+    self.commitment_cost=commitment_cost
 
     #codebook creation  #Deepmind prevent exploding or encoding in small area of codebook Next parmtrize
     limit = 3 ** 0.5
@@ -50,7 +56,7 @@ class Vector_Quantizer_Block (nn.Module):
 
   def  forward (self,x):
 
-    #make encoder shape into B W H C 
+    #make encoder shape into B W H C
     Permuted_x=x.permute(0,2,3,1)
     #flatten
     flatten_x=Permuted_x.contiguous().view(-1,self.embedding_dim)
@@ -59,10 +65,10 @@ class Vector_Quantizer_Block (nn.Module):
             - 2 * flatten_x @ self.e_i_ts
             + (self.e_i_ts ** 2).sum(0, keepdim=True)
         )
-    
-    encoding_indices = distances.argmin(1) # indcies matches in codebook 
 
-    quantized_x = F.embedding(   # indcies are mapped to vectors of codebook 
+    encoding_indices = distances.argmin(1) # indcies matches in codebook
+
+    quantized_x = F.embedding(   # indcies are mapped to vectors of codebook
             encoding_indices.view(x.shape[0], *x.shape[2:]), self.e_i_ts.transpose(0, 1)
         ).permute(0, 3, 1, 2)
 
@@ -71,7 +77,7 @@ class Vector_Quantizer_Block (nn.Module):
 
     #Backpropagation pypass the vector quantize
     quantized_x = x + (quantized_x - x).detach()
-    
+
 
 
 
@@ -102,7 +108,7 @@ class Decoder_Block (nn.Module):
         nn.Sigmoid()
     )
   def forward(self,x) :
-   
+
     return self.decoder(x)
 
 

@@ -2,30 +2,29 @@ from vqvae.data_setup import DataSetup
 from vqvae.models.vq_vae import VQ_VAE_Model
 import torch
 import torch.nn as nn
-import numpy as np
 from PIL import Image
+import numpy as np
 from tqdm.auto import tqdm
 
 def save_img_tensors_as_grid(img_tensors, nrows, f):
-    img_tensors = img_tensors.permute(0, 2, 3, 1)
-    imgs_array = img_tensors.detach().cpu().numpy()
-    imgs_array[imgs_array < -0.5] = -0.5
-    imgs_array[imgs_array > 0.5] = 0.5
-    imgs_array = 255 * (imgs_array + 0.5)
-    batch_size = img_tensors.shape[0]
-    img_size = img_tensors.shape[1]
+    batch_size, channels, height, width = img_tensors.shape
     ncols = batch_size // nrows
-    img_arr = np.zeros((nrows * img_size, ncols * img_size, 3))
+
+    imgs_array = img_tensors.detach().cpu().numpy()
+    imgs_array = np.clip(imgs_array, 0, 1)
+    imgs_array = (imgs_array * 255).astype(np.uint8)
+
+    grid_h = nrows * height
+    grid_w = ncols * width
+    img_arr = np.zeros((grid_h, grid_w), dtype=np.uint8)
+
     for idx in range(batch_size):
         row_idx = idx // ncols
         col_idx = idx % ncols
-        row_start = row_idx * img_size
-        row_end = row_start + img_size
-        col_start = col_idx * img_size
-        col_end = col_start + img_size
-        img_arr[row_start:row_end, col_start:col_end] = imgs_array[idx]
+        img_arr[row_idx*height : (row_idx+1)*height,
+                col_idx*width  : (col_idx+1)*width] = imgs_array[idx, 0]
 
-    Image.fromarray(img_arr.astype(np.uint8), "RGB").save(f"{f}.jpg")
+    Image.fromarray(img_arr, mode="L").save(f"{f}.jpg")
 
 def train_vqvae(epochs:int, batchsize:int, learning_rate:float, num_workers:int):
     torch.manual_seed(42)
@@ -35,7 +34,6 @@ def train_vqvae(epochs:int, batchsize:int, learning_rate:float, num_workers:int)
 
     model = VQ_VAE_Model()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
 
@@ -45,26 +43,33 @@ def train_vqvae(epochs:int, batchsize:int, learning_rate:float, num_workers:int)
         model.train()
         total_train_loss = 0
         total_recon_loss = 0
-       
+
         for i, (images, _) in enumerate(train_dataloader):
             optimizer.zero_grad()
             images = images.to(device)
 
-            x_hat, dictionary_loss, commitment_loss, encoding_indices = model(images)
+            x_hat, dictionary_loss, commitment_loss, _ = model(images)
             recon_loss = criterion(x_hat, images)
-            loss = recon_loss + dictionary_loss + commitment_loss
+            loss = recon_loss + dictionary_loss + 0.25*commitment_loss
+            
             loss.backward()
             optimizer.step()
 
             total_train_loss += loss.item()
             total_recon_loss += recon_loss.item()
-            print(f"Epoch: {epoch+1}/{epochs} | Batch: {i+1}/{len(train_dataloader)} | Train Loss: {total_train_loss/(i+1):.4f} | Recon Loss: {total_recon_loss/(i+1):.4f}")
+            
+            if i % 100 == 0:
+                print(f"Epoch: {epoch+1} | Batch: {i} | Train Loss: {total_train_loss/(i+1):.4f}")
 
-        model.eval()   
+        # --- MOVED INSIDE EPOCH LOOP ---
+        # Now you will see images in the sidebar after every epoch
+        model.eval()
         with torch.no_grad():
-            for valid_tensors, _ in test_dataloader:
-                save_img_tensors_as_grid(valid_tensors, 4, f"true_epoch_{epoch}")
-                # Accessing index 0 because model returns (x_recon, d_loss, c_loss, indices)
-                recon_out = model(valid_tensors.to(device))[0]
-                save_img_tensors_as_grid(recon_out, 4, f"recon_epoch_{epoch}")
-                break
+            for images, _ in test_dataloader:
+                images = images.to(device)
+                x_hat, _, _, _ = model(images) 
+
+                # Unique names so we don't overwrite
+                save_img_tensors_as_grid(images, 4, f"true_epoch_{epoch+1}")
+                save_img_tensors_as_grid(x_hat, 4, f"recon_epoch_{epoch+1}")
+                break 

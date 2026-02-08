@@ -8,8 +8,10 @@ class DataSetup:
     self.batch_size=batch_size
     self.num_workers=num_workers
     self.train_data= torchvision.datasets.MNIST(root='data',
-                                       train=True, # Fixed string 'true' to boolean True
-                                       download=True,transform=torchvision.transforms.ToTensor(),
+                                       train=True,
+                                       download=True,
+
+                                       transform=torchvision.transforms.ToTensor(),
                                        target_transform=None)
 
     self.test_data= torchvision.datasets.MNIST(root='data',
