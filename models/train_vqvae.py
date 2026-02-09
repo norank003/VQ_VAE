@@ -63,7 +63,7 @@ def train_vqvae(epochs:int, batchsize:int, learning_rate:float, num_workers:int)
                 print(f"Epoch: {epoch+1} | Batch: {i} | Train Loss: {total_train_loss/(i+1):.4f}")
 
         
-                # --- SAVE CHECKPOINT ONLY AT EPOCH 14 ---
+                
         if epoch == 14:
             checkpoint = {
                 'epoch': epoch + 1,
