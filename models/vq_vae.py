@@ -68,8 +68,8 @@ class Vector_Quantizer_Block(nn.Module):
         quantized = self.embeddings(encoding_indices).view(x_perm.shape)
 
         # Losses
-        dictionary_loss = F.mse_loss(quantized.detach(), x_perm)
-        commitment_loss = F.mse_loss(quantized, x_perm.detach())
+        dictionary_loss = F.mse_loss(quantized, x_perm.detach())
+        commitment_loss = F.mse_loss(quantized.detach(), x_perm)
 
         # Back to BCHW
         quantized = quantized.permute(0, 3, 1, 2).contiguous()
@@ -91,6 +91,7 @@ class Decoder_Block(nn.Module):
             Residual_Block(hidden_dims),
             nn.ConvTranspose2d(hidden_dims, hidden_dims, 4, stride=2, padding=1),
             nn.ReLU(inplace=True),
+            
             nn.ConvTranspose2d(hidden_dims, out_channels, 4, stride=2, padding=1),
             nn.Sigmoid(),
         )
