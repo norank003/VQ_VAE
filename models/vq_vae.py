@@ -119,13 +119,31 @@ class Decoder_Block (nn.Module):
 
 
 
-
 class VQ_VAE_Model(nn.Module):
   def __init__(self):
     super().__init__()
     self.encoder=Encoder_Block(input_shape=1,hidden_dims=256)
     self.vq_layer=Vector_Quantizer_Block(num_embeddings=512, embedding_dim=256)
     self.decoder=Decoder_Block(hidden_dims=256,out_channels=1)
+  def encode(self, x):
+        """Used during PixelCNN Training to get target indices"""
+        z = self.encoder(x)
+        # returns (quantized_x, dict_loss, commit_loss, indices)
+        return self.vq_layer(z) 
+
+ 
+  def decode_indices(self, indices):
+        """Converts sampled indices (B, 7, 7) into an image (B, 1, 28, 28)"""
+        # 1. Map indices to codebook vectors: (B, 7, 7) -> (B, 7, 7, 256)
+        # We use vq_layer.e_i_ts because that is your codebook parameter
+        z_q = F.embedding(indices, self.vq_layer.e_i_ts.transpose(0, 1))
+        
+        # 2. Permute to (B, 256, 7, 7) for the decoder
+        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+        
+        # 3. Pass through the decoder
+        return self.decoder(z_q)
+ 
 
   def forward(self,x):
     z=self.encoder(x)

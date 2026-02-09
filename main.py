@@ -1,6 +1,9 @@
 import argparse
 from models.train_vqvae import train_vqvae
 from data_setup import DataSetup
+import torch
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Train VQ-VAE Model")
@@ -20,6 +23,8 @@ def main():
         learning_rate=args.lr,
         num_workers=args.num_workers
     )
+
+
 
 if __name__ == "__main__":
     main()
