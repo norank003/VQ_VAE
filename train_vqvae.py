@@ -1,3 +1,4 @@
+
 from data_setup import DataSetup
 from models.vq_vae import VQ_VAE_Model
 import torch
@@ -51,25 +52,33 @@ def train_vqvae(epochs:int, batchsize:int, learning_rate:float, num_workers:int)
             x_hat, dictionary_loss, commitment_loss, _ = model(images)
             recon_loss = criterion(x_hat, images)
             loss = recon_loss + dictionary_loss + 0.25*commitment_loss
-            
+
             loss.backward()
             optimizer.step()
 
             total_train_loss += loss.item()
             total_recon_loss += recon_loss.item()
-            
+
             if i % 100 == 0:
                 print(f"Epoch: {epoch+1} | Batch: {i} | Train Loss: {total_train_loss/(i+1):.4f}")
 
-        # --- MOVED INSIDE EPOCH LOOP ---
-        # Now you will see images in the sidebar after every epoch
+        
+        if epoch ==14
+          checkpoint = {
+            'epoch': epoch + 1,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': total_train_loss / len(train_dataloader),
+        }
+        torch.save(checkpoint, f"/content/VQ_VAE/model_checkpoints_epoch_{epoch+1}.pth")
+        
         model.eval()
         with torch.no_grad():
             for images, _ in test_dataloader:
                 images = images.to(device)
-                x_hat, _, _, _ = model(images) 
+                x_hat, _, _, _ = model(images)
 
-                # Unique names so we don't overwrite
+
                 save_img_tensors_as_grid(images, 4, f"true_epoch_{epoch+1}")
                 save_img_tensors_as_grid(x_hat, 4, f"recon_epoch_{epoch+1}")
-                break 
+                break

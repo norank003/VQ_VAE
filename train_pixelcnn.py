@@ -35,8 +35,12 @@ def train_pixelcnn(epochs:int, batchsize:int, learning_rate:float, num_workers:i
 
     # Initialize and Load PRETRAINED VQ-VAE
     vqvae_model = VQ_VAE_Model().to(device)
-    checkpoint_path = "/content/vqvae/model_checkpoints/vqvae_final_trial2_codebookfix.pt"
-    vqvae_model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    checkpoint_path = "/content/VQ_VAE/model_checkpoints_epoch_15.pth"
+    
+    # Corrected Loading Logic
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    vqvae_model.load_state_dict(checkpoint['model_state_dict'])
+    
     vqvae_model.eval() # Keep VQ-VAE frozen
     for param in vqvae_model.parameters():
         param.requires_grad = False

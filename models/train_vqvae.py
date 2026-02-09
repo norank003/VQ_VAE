@@ -62,7 +62,20 @@ def train_vqvae(epochs:int, batchsize:int, learning_rate:float, num_workers:int)
             if i % 100 == 0:
                 print(f"Epoch: {epoch+1} | Batch: {i} | Train Loss: {total_train_loss/(i+1):.4f}")
 
+        
+                # --- SAVE CHECKPOINT ONLY AT EPOCH 14 ---
+        if epoch == 14:
+            checkpoint = {
+                'epoch': epoch + 1,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': total_train_loss / len(train_dataloader),
+            }
+            # This line MUST be indented to match the 'checkpoint' variable above
+            torch.save(checkpoint, f"/content/VQ_VAE/model_checkpoints_epoch_{epoch+1}.pth")
+            print(f"Checkpoint saved at epoch {epoch+1}")
 
+        
         model.eval()
         with torch.no_grad():
             for images, _ in test_dataloader:
